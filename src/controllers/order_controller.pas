@@ -33,15 +33,15 @@ var
   Query: TZQuery;
   JsonArrayOrders: TJSONArray;
   JsonOrder: TJSONObject;
-  JsonProductsList: TJSonArray;
+  JsonProductsList: TJSONArray;
   JsonProduct: TJsonObject;
-  JsonAddonsList: TJsonArray;
-  JsonAddon: TJsonObject;
+  JsonAdditionalList: TJsonArray;
+  JsonAdditional: TJsonObject;
 
   LastPreVenda: integer;
-  LastProduct: integer;
+  LastItem: integer;
   CurrentPreVenda: integer;
-  CurrentProduct: integer;
+  CurrentItem: integer;
 begin
   Conn := connection.GetConnection;
   Query := TZQuery.Create(nil);
@@ -49,37 +49,37 @@ begin
 
   try
     Query.Connection := Conn;
-    Query.SQL.Text :=
-      'SELECT ' + '  PV.CODPREVENDA, PV.ID_COMANDA, PV.IDMESA, PV.COO, PV.NOME_CLI, '
-      + '  PV.SUBTOTAL, PV.TAXA_SERVICO, PV.DATAHORA_INICIO, ' +
-      '  PI.CODPRODUTO, PI.CANCELADO, PI.QTD AS QTD_PROD, PI.PRECO_UNITARIO AS PRECO_PROD, '
-      + '  P.DESCRICAO AS DESC_PROD, ' +
-      '  PA.DESCRICAO AS DESC_ADIC, PA.QTD AS QTD_ADIC, PA.PRECO_UNITARIO AS PRECO_ADIC '
-      +
-      'FROM PREVENDA PV ' +
-      'INNER JOIN PRE_ITEM PI ON PV.CODPREVENDA = PI.CODPREVENDA ' +
-      'INNER JOIN PRODUTO P ON PI.CODPRODUTO = P.CODPRODUTO ' +
-      'LEFT JOIN PRE_ITEM_ADICIONAL PA ON (PI.CODPREVENDA = PA.CODPREVENDA AND PI.CODPRODUTO = PA.CODPRODUTO) '
-      +
-      'ORDER BY PV.CODPREVENDA, PI.CODPRODUTO';
+        Query.SQL.Text :=
+      'SELECT PV.CODPREVENDA, PV.ID_COMANDA, PV.IDMESA, PV.COO, PV.NOME_CLI,'
+      + ' PV.SUBTOTAL, PV.TAXA_SERVICO, PV.DATAHORA_INICIO,'
+      + ' PI.SEQUENCIA, PI.CODPRODUTO, PI.CANCELADO, PI.QTD AS QTD_PROD, PI.PRECO_UNITARIO AS PRECO_PROD,'
+      + ' P.DESCRICAO AS DESC_PROD,'
+      + ' PA.DESCRICAO AS DESC_ADIC, PA.QTD AS QTD_ADIC, PA.PRECO_UNITARIO AS PRECO_ADIC'
+      + ' FROM PREVENDA PV'
+      + ' INNER JOIN PRE_ITEM PI ON PV.CODPREVENDA = PI.CODPREVENDA'
+      + ' INNER JOIN PRODUTO P ON PI.CODPRODUTO = P.CODPRODUTO'
+      + ' LEFT JOIN PRE_ITEM_ADICIONAL PA ON (PI.CODPREVENDA = PA.CODPREVENDA AND PI.CODPRODUTO = PA.CODPRODUTO)'
+      + ' WHERE PV.CANCELADO = ''N'' '
+      + ' AND (PV.COO IS NULL OR PV.COO <= 0)'
+      + ' ORDER BY PV.CODPREVENDA, PI.SEQUENCIA';
 
     Conn.Connect;
     Query.Open;
 
     LastPreVenda := -1;
-    LastProduct := -1;
+    LastItem := -1;
 
     JsonOrder := nil;
     JsonProductsList := nil;
     JsonProduct := nil;
-    JsonAddonsList := nil;
-    JsonAddon := nil;
+    JsonAdditionalList := nil;
+    JsonAdditional := nil;
 
     try
       while not Query.EOF do
       begin
         CurrentPreVenda := Query.FieldByName('CODPREVENDA').AsInteger;
-        CurrentProduct := Query.FieldByName('CODPRODUTO').AsInteger;
+        CurrentItem := Query.FieldByName('SEQUENCIA').AsInteger;
 
         if CurrentPreVenda <> LastPreVenda then
         begin
@@ -104,34 +104,35 @@ begin
           JsonOrder.Add('products', JsonProductsList);
 
           LastPreVenda := CurrentPreVenda;
-          LastProduct := -1;
+          LastItem := -1;
         end;
 
-        if CurrentProduct <> LastProduct then
+        if CurrentItem <> LastItem then
         begin
           JsonProduct := TJSONObject.Create;
           JsonProductsList.Add(JsonProduct);
 
-          JsonProduct.Add('CODPRODUTO', CurrentProduct);
+          JsonProduct.Add('SEQUENCIA', CurrentItem);
+          JsonProduct.Add('CODPRODUTO', Query.FieldByName('CODPRODUTO').AsInteger);
           JsonProduct.Add('DESCRICAO', Query.FieldByName('DESC_PROD').AsString);
           JsonProduct.Add('QTD', Query.FieldByName('QTD_PROD').AsFloat);
           JsonProduct.Add('PRECO_UNITARIO', Query.FieldByName('PRECO_PROD').AsFloat);
           JsonProduct.Add('CANCELADO', Query.FieldByName('CANCELADO').AsString);
 
-          JsonAddonsList := TJSONArray.Create;
-          JsonProduct.Add('addons', JsonAddonsList);
+          JsonAdditionalList := TJSONArray.Create;
+          JsonProduct.Add('additional', JsonAdditionalList);
 
-          LastProduct := CurrentProduct;
+          LastItem := CurrentItem;
         end;
 
         if not Query.FieldByName('DESC_ADIC').IsNull then
         begin
-          JsonAddon := TJSONObject.Create;
-          JsonAddon.Add('DESCRICAO', Query.FieldByName('DESC_ADIC').AsString);
-          JsonAddon.Add('QTD', Query.FieldByName('QTD_ADIC').AsFloat);
-          JsonAddon.Add('PRECO_UNITARIO', Query.FieldByName('PRECO_ADIC').AsFloat);
+          JsonAdditional := TJSONObject.Create;
+          JsonAdditional.Add('DESCRICAO', Query.FieldByName('DESC_ADIC').AsString);
+          JsonAdditional.Add('QTD', Query.FieldByName('QTD_ADIC').AsFloat);
+          JsonAdditional.Add('PRECO_UNITARIO', Query.FieldByName('PRECO_ADIC').AsFloat);
 
-          JsonAddonsList.Add(JsonAddon);
+          JsonAdditionalList.Add(JsonAdditional);
         end;
 
         Query.Next;
