@@ -1,17 +1,24 @@
 program djorder_server;
 
+{$apptype gui}
+
 uses
   SysUtils,
+  Forms,
+  Interfaces,
   Horse,
   Horse.Jhonson,
-  routes;
+  routes,
+  ufrm_server;
 
 begin
   THorse.Use(Jhonson());
-
   routes.Registry;
 
-  WriteLn('DJORDER SERVER RUNNING ON PORT 9000');
-  THorse.Listen(9000);
-
+  Application.Scaled := True;
+  Application.Initialize;
+  Application.MainFormOnTaskBar := False;
+  Application.CreateForm(Tfrm_server, frm_server);
+  Application.ShowMainForm := False;
+  Application.Run;
 end.
