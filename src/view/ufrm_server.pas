@@ -147,9 +147,6 @@ procedure Tfrm_server.Stop;
 begin
   if not FServerRunning then Exit;
 
-  if THorse.IsRunning then
-    THorse.StopListen;
-
   FServerRunning := False;
 
   edtPath.Enabled := True;
@@ -162,6 +159,7 @@ begin
   status.Font.Color := clRed;
 
   Timer1.Enabled := False;
+  Timer1.Tag := 0;
   timing.Caption := '00:00:00';
 
 end;
@@ -169,7 +167,6 @@ end;
 procedure Tfrm_server.Timer1Timer(Sender: TObject);
 var
   H, M, S: word;
-  CurrTime: TDateTime;
 begin
   try
     timing.Tag := timing.Tag + 1;

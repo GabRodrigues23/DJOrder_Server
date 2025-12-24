@@ -4611,7 +4611,7 @@ object frm_server: Tfrm_server
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Left = 5
     BorderSpacing.Right = 10
-    Caption = '0 Minuto(s)'
+    Caption = '00:00:00'
     Font.CharSet = ANSI_CHARSET
     Font.Height = -16
     Font.Name = 'Calibri'
@@ -8797,6 +8797,7 @@ object frm_server: Tfrm_server
     Top = 168
   end
   object Timer1: TTimer
+    Enabled = False
     OnTimer = Timer1Timer
     Left = 384
     Top = 168
